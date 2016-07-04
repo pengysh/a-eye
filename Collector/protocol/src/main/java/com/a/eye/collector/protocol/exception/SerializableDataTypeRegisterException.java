@@ -1,4 +1,4 @@
-package com.a.eye.collector.exception;
+package com.a.eye.collector.protocol.exception;
 
 /**
  * Created by wusheng on 16/7/4.

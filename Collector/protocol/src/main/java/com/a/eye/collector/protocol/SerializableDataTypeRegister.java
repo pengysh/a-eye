@@ -1,6 +1,6 @@
 package com.a.eye.collector.protocol;
 
-import com.a.eye.collector.exception.SerializableDataTypeRegisterException;
+import com.a.eye.collector.protocol.exception.SerializableDataTypeRegisterException;
 
 import java.util.HashMap;
 import java.util.Map;

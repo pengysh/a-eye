@@ -1,6 +1,6 @@
 package com.a.eye.collector.protocol.common;
 
-import com.a.eye.collector.exception.SpanTypeCannotConvertException;
+import com.a.eye.collector.protocol.exception.SpanTypeCannotConvertException;
 
 /**
  * Created by xin on 16-7-2.
@@ -15,7 +15,7 @@ public enum SpanType {
         this.value = value;
     }
 
-    static SpanType convert(String spanTypeValue) {
+    public static SpanType convert(String spanTypeValue) {
         switch (Byte.valueOf(spanTypeValue)){
             case 1 : return LOCAL;
             case 2 : return RPC_CLIENT;
