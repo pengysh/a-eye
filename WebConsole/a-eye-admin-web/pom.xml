@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.a.eye</groupId>
+    <artifactId>WebConsole</artifactId>
+    <version>1.0</version>
+  </parent>
+  <artifactId>a-eye-admin-web</artifactId>
+  <packaging>war</packaging>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <finalName>a-eye-admin-web</finalName>
+  </build>
+  <name>门户后台管理界面</name>
+  <description>作为未来监控系统在互联网上作为SAAS开放使用时的后台管理界面</description>
+</project>

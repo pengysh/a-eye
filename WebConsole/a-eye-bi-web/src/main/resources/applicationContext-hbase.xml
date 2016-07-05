@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="hbaseConfiguration" class="org.springframework.data.hadoop.hbase.HbaseConfigurationFactoryBean">
+        <property name="properties">
+            <props>
+                <prop key="hbase.zookeeper.quorum">${hbase.client.host}</prop>
+                <prop key="hbase.zookeeper.property.clientPort">${hbase.client.port}</prop>
+
+                <!-- hbase default:true -->
+                <prop key="hbase.ipc.client.tcpnodelay">${hbase.ipc.client.tcpnodelay}</prop>
+                <!-- hbase default:60000 -->
+                <prop key="hbase.rpc.timeout">${hbase.rpc.timeout}</prop>
+                <!-- hbase default:Integer.MAX_VALUE -->
+                <prop key="hbase.client.operation.timeout">${hbase.client.operation.timeout}</prop>
+
+                <!-- hbase socket read timeout. default: 200000-->
+                <prop key="hbase.ipc.client.socket.timeout.read">${hbase.ipc.client.socket.timeout.read}</prop>
+                <!-- socket write timeout. hbase default: 600000-->
+                <prop key="hbase.ipc.client.socket.timeout.write">${hbase.ipc.client.socket.timeout.write}</prop>
+            </props>
+        </property>
+        <property name="deleteConnection" value="false"/>
+    </bean>
+
+    <bean id="connectionFactory" class="com.a.eye.common.web.common.hbase.PooledHTableFactory">
+        <constructor-arg ref="hbaseConfiguration"/>
+        <constructor-arg value="${hbase.client.thread.max}"/>
+        <constructor-arg value="${hbase.client.threadPool.queueSize}"/>
+        <constructor-arg value="${hbase.client.threadPool.prestart}"/>
+    </bean>
+
+    <bean id="hbaseTemplate" class="com.a.eye.common.web.common.hbase.HbaseTemplate2">
+        <property name="configuration" ref="hbaseConfiguration"/>
+        <property name="tableFactory" ref="connectionFactory"/>
+        <property name="enableParallelScan" value="${hbase.client.parallel.scan.enable:false}"/>
+        <property name="maxThreads" value="${hbase.client.parallel.scan.maxthreads:16}"/>
+        <property name="maxThreadsPerParallelScan" value="${hbase.client.parallel.scan.maxthreadsperscan:4}"/>
+    </bean>
+    
+    <bean id="hBaseAdminTemplate" class="com.a.eye.common.web.common.hbase.HBaseAdminTemplate" destroy-method="close">
+        <constructor-arg ref="hbaseConfiguration" index="0"></constructor-arg>
+    </bean>
+
+    <bean id="applicationTraceIndexDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="applicationTraceIndex"/>
+    </bean>
+
+    <bean id="applicationTraceIndex" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix$OneByteSimpleHash">
+        <constructor-arg>
+            <value type="int">32</value>
+        </constructor-arg>
+    </bean>
+
+    <bean id="traceDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="traceHasher"/>
+    </bean>
+
+    <bean id="traceHasher" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix$OneByteSimpleHash">
+        <constructor-arg>
+            <value type="int">64</value>
+        </constructor-arg>
+    </bean>
+
+
+    <bean id="agentStatRowKeyDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="agentStatRangeHasher"/>
+    </bean>
+
+    <bean id="agentStatRangeHasher" class="com.a.eye.common.web.common.hbase.distributor.RangeOneByteSimpleHash">
+        <constructor-arg type="int" value="0"/>
+        <constructor-arg type="int" value="24"/>
+        <constructor-arg type="int" value="32"/>
+    </bean>
+
+    <bean id="metadataRowKeyDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="metadataRangeHasher"/>
+    </bean>
+    
+    <bean id="metadataRowKeyDistributor2" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="metadataRangeHasher2"/>
+    </bean>
+
+    <bean id="metadataRangeHasher" class="com.a.eye.common.web.common.hbase.distributor.RangeOneByteSimpleHash">
+        <constructor-arg type="int" value="0"/>
+        <constructor-arg type="int" value="32"/>
+        <constructor-arg type="int" value="8"/>
+    </bean>
+    
+    <bean id="metadataRangeHasher2" class="com.a.eye.common.web.common.hbase.distributor.RangeOneByteSimpleHash">
+        <constructor-arg type="int" value="0"/>
+        <constructor-arg type="int" value="36"/>
+        <constructor-arg type="int" value="32"/>
+    </bean>
+
+    <bean id="acceptApplicationRowKeyDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="acceptApplicationHasher"/>
+    </bean>
+
+    <bean id="acceptApplicationHasher" class="com.a.eye.common.web.common.hbase.distributor.RangeOneByteSimpleHash">
+        <!-- hash parentApplicationName -->
+        <constructor-arg type="int" value="0"/>
+        <constructor-arg type="int" value="24"/>
+        <constructor-arg type="int" value="4"/>
+    </bean>
+
+    <bean id="statisticsCalleeRowKeyDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="statisticsCalleeHasher"/>
+    </bean>
+
+    <bean id="statisticsCalleeHasher" class="com.a.eye.common.web.common.hbase.distributor.RangeOneByteSimpleHash">
+        <constructor-arg type="int" value="0"/>
+        <constructor-arg type="int" value="36"/>
+        <constructor-arg type="int" value="32"/>
+    </bean>
+
+    <bean id="statisticsCallerRowKeyDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="statisticsCallerHasher"/>
+    </bean>
+
+    <bean id="statisticsCallerHasher" class="com.a.eye.common.web.common.hbase.distributor.RangeOneByteSimpleHash">
+        <constructor-arg type="int" value="0"/>
+        <constructor-arg type="int" value="36"/>
+        <constructor-arg type="int" value="32"/>
+    </bean>
+
+    <bean id="statisticsSelfRowKeyDistributor" class="com.sematext.hbase.wd.RowKeyDistributorByHashPrefix">
+        <constructor-arg ref="statisticsSelfHasher"/>
+    </bean>
+
+    <bean id="statisticsSelfHasher" class="com.a.eye.common.web.common.hbase.distributor.RangeOneByteSimpleHash">
+        <constructor-arg type="int" value="0"/>
+        <constructor-arg type="int" value="32"/>
+        <constructor-arg type="int" value="8"/>
+    </bean>
+</beans>
