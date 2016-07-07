@@ -1,4 +1,4 @@
-package com.a.eye.collector.util;
+package com.a.eye.collector.protocol.util;
 
 
 import com.a.eye.collector.protocol.Span;

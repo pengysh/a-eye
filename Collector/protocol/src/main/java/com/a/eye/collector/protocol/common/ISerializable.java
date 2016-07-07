@@ -6,6 +6,6 @@ package com.a.eye.collector.protocol.common;
 public interface ISerializable {
     byte[] convert2Bytes();
 
-    Object convert2Object(byte[] data);
+    NullableClass convert2Object(byte[] data);
 
 }

@@ -1,4 +1,4 @@
-package com.a.eye.collector.util;
+package com.a.eye.collector.protocol.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
