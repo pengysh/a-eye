@@ -1,6 +1,6 @@
 package com.a.eye.collector.protocol.common;
 
-import com.a.eye.collector.exception.SpanTypeCannotConvertException;
+import com.a.eye.collector.protocol.exception.SpanTypeCannotConvertException;
 
 /**
  * Created by xin on 16-7-2.
