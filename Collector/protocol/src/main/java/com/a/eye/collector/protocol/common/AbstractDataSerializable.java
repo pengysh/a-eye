@@ -1,43 +1,54 @@
 package com.a.eye.collector.protocol.common;
 
 import com.a.eye.collector.protocol.NullClass;
-import com.a.eye.collector.protocol.SerializableDataTypeRegister;
-import com.a.eye.collector.util.IntegerAssist;
+import com.a.eye.collector.protocol.SerializedFactory;
+import com.a.eye.collector.protocol.util.IntegerAssist;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Arrays;
 
 /**
  * Created by wusheng on 16/7/4.
  */
 public abstract class AbstractDataSerializable implements ISerializable, NullableClass {
-    private static Set<Integer> DATA_TYPE_SCOPE = new HashSet<Integer>();
-
-    public AbstractDataSerializable(){
-        SerializableDataTypeRegister.init(getDataType(), this.getClass());
-    }
-
     public abstract int getDataType();
 
     public abstract byte[] getData();
 
+    public abstract AbstractDataSerializable convertData(byte[] data);
+
+    /**
+     * 消息包结构:
+     * 4位消息体类型
+     * n位数据正文
+     *
+     * @return
+     */
     @Override
     public byte[] convert2Bytes() {
-        byte[] type = IntegerAssist.intToBytes(SerializableDataTypeRegister.getType(this.getClass()));
+        byte[] messageByteData = getData();
+        byte[] messagePackage = new byte[4 + messageByteData.length];
+        packData(messageByteData, messagePackage);
+        setProtocolType(messageByteData, messagePackage);
+        return messagePackage;
+    }
 
-        //TODO:类型+ data = 消息包
-        return getData();
+    private void setProtocolType(byte[] messageByteData, byte[] messagePackage) {
+        System.arraycopy(IntegerAssist.intToBytes(getDataType()), 0, messagePackage, 0, 4);
+    }
+
+    private void packData(byte[] messageByteData, byte[] messagePackage) {
+        System.arraycopy(messageByteData, 0, messagePackage, 4, messageByteData.length);
     }
 
     @Override
-    public Object convert2Object(byte[] data) {
-        // TODO:data的前4位转成type;
-        int dataType =  1;
-        if(!SerializableDataTypeRegister.isTypeAndClassMatch(dataType, this.getClass())){
+    public NullableClass convert2Object(byte[] data) {
+        int dataType = IntegerAssist.bytesToInt(data, 0);
+
+        if (!SerializedFactory.isCanSerialized(dataType)) {
             return new NullClass();
         }
-        // TODO: 反序列化
-        return null;
+
+        return this.convertData(Arrays.copyOfRange(data, 4, data.length));
     }
 
 

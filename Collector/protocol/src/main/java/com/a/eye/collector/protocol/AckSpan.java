@@ -1,6 +1,11 @@
 package com.a.eye.collector.protocol;
 
 import com.a.eye.collector.protocol.common.AbstractDataSerializable;
+import com.a.eye.collector.protocol.proto.TraceProtocol;
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by wusheng on 16/7/4.
@@ -9,33 +14,52 @@ public class AckSpan extends AbstractDataSerializable {
     /**
      * tid，调用链的全局唯一标识
      */
-    protected String traceId;
+    private String traceId;
     /**
      * 当前调用链的上级描述<br/>
      * 如当前序号为：0.1.0时，parentLevel=0.1
      */
-    protected String parentLevel;
+    private String parentLevel;
     /**
      * 当前调用链的本机描述<br/>
      * 如当前序号为：0.1.0时，levelId=0
      */
-    protected int levelId = 0;
+    private int levelId = 0;
     /**
      * 节点调用花费时间
      */
-    protected long cost = 0L;
+    private long cost = 0L;
     /**
      * 节点调用的状态<br/>
      * 0：成功<br/>
      * 1：异常<br/>
      * 异常判断原则：代码产生exception，并且此exception不在忽略列表中
      */
-    protected byte statusCode = 0;
+    private byte statusCode = 0;
     /**
      * 节点调用的错误堆栈<br/>
      * 堆栈以JAVA的exception为主要判断依据
      */
-    protected String exceptionStack;
+    private String exceptionStack = "";
+
+
+    public AckSpan(Span spanData) {
+        this.traceId = spanData.getTraceId();
+        this.parentLevel = spanData.getParentLevel();
+        this.levelId = spanData.getLevelId();
+        this.cost = System.currentTimeMillis() - spanData.getStartDate();
+        this.statusCode = spanData.getStatusCode();
+        this.exceptionStack = spanData.getExceptionStack();
+    }
+
+    /**
+     * 埋点入参列表,补充时触发
+     */
+    private Map<String, String> paramters = new HashMap<String, String>();
+
+    public AckSpan() {
+
+    }
 
     public String getTraceId() {
         return traceId;
@@ -85,6 +109,14 @@ public class AckSpan extends AbstractDataSerializable {
         this.exceptionStack = exceptionStack;
     }
 
+    public Map<String, String> getParamters() {
+        return paramters;
+    }
+
+    public void setParamters(Map<String, String> paramters) {
+        this.paramters = paramters;
+    }
+
     @Override
     public int getDataType() {
         return 2;
@@ -92,7 +124,26 @@ public class AckSpan extends AbstractDataSerializable {
 
     @Override
     public byte[] getData() {
-        return new byte[0];
+        return TraceProtocol.AckSpan.newBuilder().setTraceId(traceId).setParentLevel(parentLevel).
+                setLevelId(levelId).setCost(cost).setStatusCode(statusCode).setExceptionStack(exceptionStack).build().toByteArray();
+    }
+
+    @Override
+    public AbstractDataSerializable convertData(byte[] data) {
+        AckSpan ackSpan = new AckSpan();
+        try {
+            TraceProtocol.AckSpan ackSpanProtocol = TraceProtocol.AckSpan.parseFrom(data);
+            ackSpan.setTraceId(ackSpanProtocol.getTraceId());
+            ackSpan.setParentLevel(ackSpanProtocol.getParentLevel());
+            ackSpan.setLevelId(ackSpanProtocol.getLevelId());
+            ackSpan.setCost(ackSpanProtocol.getCost());
+            ackSpan.setExceptionStack(ackSpanProtocol.getExceptionStack());
+            ackSpan.setStatusCode((byte) ackSpanProtocol.getStatusCode());
+        } catch (InvalidProtocolBufferException e) {
+            return null;
+        }
+
+        return ackSpan;
     }
 
     @Override
