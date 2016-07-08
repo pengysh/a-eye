@@ -23,7 +23,7 @@ public class AnalysisTraceTopology {
         builder.setSpout("hbaseTraceSpout", new HbaseTraceSpout());
         Config conf = new Config();
         
-    
+        
         if (args != null && args.length > 0) {
             conf.setDebug(false);
             conf.setNumWorkers(1);

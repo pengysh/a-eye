@@ -38,7 +38,7 @@ public class HbaseTraceSpout extends BaseRichSpout {
     private byte[] startKey;
     
     private SpoutOutputCollector collector;
-    
+      
     @Override
     public void declareOutputFields(final OutputFieldsDeclarer declarer) {
     }
