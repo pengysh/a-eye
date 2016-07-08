@@ -28,7 +28,7 @@
 	<!-- url mapping -->
 	<servlet-mapping>
 		<servlet-name>a-eye-bi-web</servlet-name>
-		<url-pattern>/*</url-pattern>
+		<url-pattern>*.aeye</url-pattern>
 	</servlet-mapping>
 
 	<filter>
@@ -56,10 +56,6 @@
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
 
-	<servlet-mapping>
-		<servlet-name>default</servlet-name>
-		<url-pattern>/</url-pattern>
-	</servlet-mapping>
 
 	<welcome-file-list>
 		<welcome-file>index.html</welcome-file>

@@ -13,7 +13,7 @@
 
 	<context:component-scan
 		base-package="com.a.eye.bi.web.dao.hbase,
-                                         com.a.eye.bi.web.service" />
+                                         com.a.eye.bi.web.service,com.a.eye.bi.web.mapper,com.a.eye.bi.web.dao" />
 
 	<bean id="propertyConfigurer"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
@@ -24,20 +24,30 @@
 			</list>
 		</property>
 	</bean>
-	
-	<bean id="webProps" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
-        <property name="location" value="classpath:config/properties/web.properties"/>
-        <property name="fileEncoding" value="UTF-8"/>
-    </bean>
-    
-    <import resource="classpath:applicationContext-hbase.xml" />
-    <import resource="classpath:applicationContext-datasource.xml" />
-    <import resource="classpath:applicationContext-tx.xml" />
-    <import resource="classpath:applicationContext-cache.xml" />
-    <import resource="classpath:applicationContext-websocket.xml" />
-	
+
+	<bean id="webProps"
+		class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="location" value="classpath:config/properties/web.properties" />
+		<property name="fileEncoding" value="UTF-8" />
+	</bean>
+
+	<import resource="classpath:applicationContext-hbase.xml" />
+	<import resource="classpath:applicationContext-datasource.xml" />
+	<import resource="classpath:applicationContext-tx.xml" />
+	<import resource="classpath:applicationContext-cache.xml" />
+	<import resource="classpath:applicationContext-websocket.xml" />
+
 	<bean id="jsonObjectMapper"
 		class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean">
 	</bean>
+	
+	<bean id="typeLoaderService" class="com.a.eye.common.web.common.service.DefaultTraceMetadataLoaderService"/>
+    <bean id="serviceTypeRegistryService" class="com.a.eye.common.web.common.service.DefaultServiceTypeRegistryService">
+        <constructor-arg ref="typeLoaderService"/>
+    </bean>
+
+    <bean id="annotationKeyRegistryService" class="com.a.eye.common.web.common.service.DefaultAnnotationKeyRegistryService">
+        <constructor-arg ref="typeLoaderService"/>
+    </bean>
 
 </beans>

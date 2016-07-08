@@ -10,13 +10,13 @@
 
 	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
 		<property name="dataSource" ref="dataSource"></property>
-		<property name="typeAliasesPackage" value="com.a.eye.bi.web.service" />
+		<property name="typeAliasesPackage" value="com.a.eye.bi.web.service.ibatis" />
 		<property name="mapperLocations" value="classpath:ibatis/*.xml"/>
 	</bean>
 
 	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
 		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
-		<property name="basePackage" value="com.a.eye.bi.web.dao" />
+		<property name="basePackage" value="com.a.eye.bi.web.dao.ibatis" />
 	</bean>
 
 	<bean id="transactionManager"

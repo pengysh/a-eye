@@ -1,10 +1,358 @@
-<html>
+<!doctype html>
+<html lang="en-US" class="no-js">
 <head>
-<script>
-	window.location.href="static/index.html"
+    <title>A EYE</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+    <link rel="icon" href="favicon.png" type="image/png">
+
+	<link href='//fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+	<link rel="stylesheet" href="lib/css/vendor.css?v=${buildTime}">
+	<link rel="stylesheet" href="lib/css/pinpoint.css?v=${buildTime}">
+</head>
+<body ng-app="pinpointApp">
+
+<!--[if lt IE 9]>
+<script src="bower_components/es5-shim/es5-shim.js?v=${buildTime}"></script>
+<script src="bower_components/json3/lib/json3.min.js?v=${buildTime}"></script>
+<![endif]-->
+<div class="modal" server-list-directive="" style="top:60px;">
+	<div class="modal-dialog modal-lg" style="width:900px;">
+		<div class="modal-content">
+			<div class="modal-header" style="background-color:#B0B0B0;color:#FFFFFF">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<span class="glyphicon glyphicon-question-sign serverListTooltip" style="cursor:pointer;float:right;color:white;margin-right:20px;"></span>
+				<h4 class="modal-title" ng-show="showNodeServer"><img ng-src="{{node.serviceType | iconUrl}}"> <span style="font-size:24px;font-weight:bold">{{node.applicationName}}</span> <span style="font-size:12px;padding-left:10px;">Server List</span></h4>
+				<h4 class="modal-title" ng-show="showLinkServer"><span style="font-size:24px;font-weight:bold"><img ng-src="{{node.fromNode.serviceType | iconUrl}}"> {{node.fromNode.applicationName}} <span class="glyphicon glyphicon-arrow-right"></span> <img ng-src="{{node.fromNode.serviceType | iconUrl}}"> {{node.toNode.applicationName}}</span> <span style="font-size:12px;padding-left:10px">Server List</span></h4>
+			</div>
+			<div class="modal-body">
+				<div class="server-wrapper" style="float:left;overflow:auto;width:450px;padding:10px 10px 10px 10px;box-shadow: 0px 0px 2px 2px rgba(0,0,0,0.3);">
+					<ul class="server-list list-unstyled" ng-show="showNodeServer" >
+		                <li ng-repeat="(key, server) in serverList | orderBy:'key'"  style="padding-bottom:6px;">
+		                    <span class="glyphicon glyphicon-home"></span>
+		                    {{server.name.split(':')[0]}}
+		                    <a ng-if="server.linkName" class="btn btn-default btn-xs" href="{{server.linkURL}}" target="_blank" title="System resource monitoring site">{{server.linkName}}</a>
+		                    <ul class="list-unstyled" style="padding-left:4px">
+		                        <li ng-repeat="instance in server.instanceList | orderBy:'instance.name'" style="padding:3px 0px 3px 0px">
+		                        	<label class="checkbox-inline">
+			                        	<input type="radio" name="selectedServer" value="{{instance.name}}" ng-click="selectServer( instance.name )" ng-checked="$parent.$first">
+			                            <span class="glyphicon glyphicon-hdd" style="padding-left:10px;color:{{node.agentHistogram[instance.name].Error > 0 ? 'red':''}}"></span>
+			                            {{instance.name}}
+		                            </label>
+									<button style="float:right" ng-show="instance.hasInspector" class="btn btn-default btn-xs" ng-click="openInspector(node, instance)">Inspector</button>
+		                        </li>
+		                    </ul>
+		                </li>
+		            </ul>
+		            <ul class="link-list list-unstyled" ng-show="showLinkServer">
+		                <li ng-repeat="(name, histogram) in linkList | orderBy:'name'" style="padding:3px 0px 3px 0px">
+                        	<label class="checkbox-inline" style="padding-left:0px;">
+	                        	<input type="radio" name="selectedServer" value="{{name}}" ng-click="selectServer( name )" ng-checked="$first">
+			                    <span class="glyphicon glyphicon-hdd" style="padding-left:10px;color:{{histogram.Error > 0 ? 'red':''}}"></span>
+			                    {{name}}
+                            </label>
+                            <a style="float:right" class="btn btn-default btn-xs" ng-href="#/inspector/{{node.applicationName || node.filterApplicationName}}@{{node.serviceType}}/{{oNavbarVoService.getReadablePeriod()}}/{{oNavbarVoService.getQueryEndDateTime()}}/{{name}}" target="_blank" title="Inspect Agents" alt="Inspect Agents">Inspector</a>
+		                </li>
+		            </ul>
+				</div>
+				<div style="float:right;padding-right:30px">
+					<h4>Response Summary</h4>
+					<response-time-chart-directive namespace="forServerList"></response-time-chart-directive>
+					<hr>
+	                <h4>Load</h4>
+	                <load-chart-directive namespace="forServerList"></load-chart-directive>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal"  id="customLogPopup">
+	<div class="modal-dialog modal-lg" style="width:800px;">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4>Notice</h4>
+			</div>
+			<div class="modal-body"></div>
+		</div>
+	</div>
+</div>
+
+<div id="wrapper" ng-class="wrapperClass" ng-style="wrapperStyle" ng-view=""></div>
+
+<!-- ng-template -->
+<script id="error" type="text/ng-template">
+    <div class="error" style="position:absolute;top:20%;width:90%;margin-left:5%;display:none;z-index:10">
+        <div class="alert alert-danger">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <h2>Error!</h2>
+            <h4 class="msg" style="color:red"></h4>
+			<button class="openDetail" onclick="jQuery('#detailErrorResult').toggle()">+</button>
+			<div class="detail" style="display:none"  id="detailErrorResult">
+				<hr>
+				<table style="width:100%">
+					<tr>
+						<td style="padding-bottom:5px">Method</td>
+						<td class="method" style="padding:0px 0px 5px 20px;color:black"></td>
+					</tr>
+					<tr>
+						<td style="padding-bottom:5px">Header</td>
+						<td class="header" style="padding:0px 0px 5px 20px;color:black"></td>
+					</tr>
+					<tr>
+						<td style="padding-bottom:5px">Parameters</td>
+						<td class="parameters" style="padding:0px 0px 5px 20px;color:black"></td>
+					</tr>
+					<tr>
+						<td style="padding-bottom:5px">URL</td>
+						<td class="url" style="padding:0px 0px 5px 20px;color:black"></td>
+					</tr>
+					<tr>
+						<td style="padding-bottom:5px">Stacktrace</td>
+						<td style="padding:0px 0px 5px 20px;color:black"><textarea class="stacktrace" disabled style="width:100%;height:340px"></textarea></td>
+					</tr>
+				</table>
+			</div>
+        </div>
+    </div>
 </script>
-</head> 
-<body>
-	
+<script id="warning" type="text/ng-template">
+    <div class="warning" style="position:absolute;top:38%;width:90%;margin-left:5%;display:none;z-index:10">
+        <div class="alert alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <h4>Warning!</h4>
+
+            <div class="msg"></div>
+        </div>
+    </div>
+</script>
+<script id="info" type="text/ng-template">
+    <div class="info" style="position:absolute;top:38%;width:90%;margin-left:5%;display:none;z-index:10">
+        <div class="alert alert-info">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <h4>Info</h4>
+
+            <div class="msg"></div>
+        </div>
+    </div>
+</script>
+<script id="loading" type="text/ng-template">
+	<div>
+		<div style="position:absolute;top:0px;left:0px;width:100%;height:100%;background-color:#0000FF;opacity:0.1;z-index:9;display:none" class="progress-back">&nbsp;</div>
+		<div style="position:absolute;top:10%;width:100%;text-align:center;z-index:10;display:none;" class="progress-tip">
+			<img src="/images/tip/tip01_ko.png" style="box-shadow: 7px 7px 10px -1px rgba(0,0,0,0.5);background-color:#FFFFFF;border-radius:20px;">
+			<div class="form-group" style="padding-top:10px">
+				<label style="background-color:#FFFFFF;padding:5px;font-size:18px;font-weight:bold;border-radius:4px">
+					<input type="checkbox" ng-model="loadingOption.hideTip"/> Don't show 30 days
+				</label>
+			</div>
+		</div>
+    	<div class="progress progress-striped" style="position:absolute;top:50%;width:90%;margin-left:5%;display:none;z-index:10">
+       		<div class="bar progress-bar progress-bar-info" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+    	</div>
+	</div>
+</script>
+<script id="sidebarLoading" type="text/ng-template">
+    <div class="cg-busy cg-busy-animation ng-hide" ng-show="!!showLoading">
+        <div class="cg-busy cg-busy-backdrop"></div>
+        <div class="cg-busy-default-wrapper" style="position: absolute; top: 0px; left: 0px; right: 0px; bottom: 0px;">
+            <div class="cg-busy-default-sign">
+                <div class="cg-busy-default-spinner">
+                    <div class="bar1"></div>
+                    <div class="bar2"></div>
+                    <div class="bar3"></div>
+                    <div class="bar4"></div>
+                    <div class="bar5"></div>
+                    <div class="bar6"></div>
+                    <div class="bar7"></div>
+                    <div class="bar8"></div>
+                    <div class="bar9"></div>
+                    <div class="bar10"></div>
+                    <div class="bar11"></div>
+                    <div class="bar12"></div>
+                </div>
+                <div class="cg-busy-default-text ng-binding">{{loadingMessage}}</div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<!-- Modal -->
+<div id="supported-browsers" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">Ã</button>
+        <h3 id="myModalLabel">Supported Browsers</h3>
+    </div>
+    <div class="modal-body">
+        <div class="main-section--answer main-section content-container"><p>You can access PinPoint via a browser
+            installed on a PC, Mac, or Linux computer.</p>
+
+            <h4>To get the latest PinPoint features, use a supported browser</h4>
+
+            <p>In general, PinPoint supports the current and prior major release of Chrome, Firefox, Internet Explorer
+                and Safari on a rolling basis. If you use a browser other than those listed below, please install the
+                one of them.</p>
+
+            <ul>
+                <li>Google Chrome <a href="http://www.google.com/chrome" target="_blank">download</a></li>
+                <li>Firefox <a href="http://www.mozilla.org/firefox" target="_blank">download</a></li>
+                <li>Internet Explorer <a href="http://windows.microsoft.com/en-US/internet-explorer/download-ie"
+                                         target="_blank">download</a></li>
+                <li>Safari <a href="http://www.apple.com/safari" target="_blank">download</a></li>
+            </ul>
+
+            <h4>To use PinPoint, enable cookies and JavaScript</h4>
+
+            <p>Regardless of your browser type, you must have cookies enabled to use PinPoint. Also, if your browser
+                supports it, enable JavaScript.</p>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+    </div>
+</div>
+
+<div class="modal fade" tabindex="-1" role="dialog" ng-controller="ConfigurationCtrl">
+  <div class="modal-dialog" role="document" style="width:1000px">
+    <div class="modal-content" id="pinpoint-configuration">
+      <div class="modal-header" style="text-align:center">
+      	<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Pinpoint Configuration</h4>
+        <ul>
+        	<li ng-class="{true: 'active'}[isGeneral()]" ng-click="setCurrentTab('general')">General</li>
+        	<li ng-class="{true: 'active'}[isAlarm()]" ng-click="setCurrentTab('alarm')">Alarm</li>
+        	<li class="description">{{descriptionOfCurrentTab}}</li>
+        	<li ng-class="{true: 'active'}[isHelp()]" ng-click="setCurrentTab('help')" style="float:right">Help</li>
+        </ul>
+      </div>
+      <div class="modal-body">
+      	<div id="config-general" ng-show="isGeneral()" ng-controller="GeneralCtrl">
+      		<h4>General Configuration <span class="general-warning"></span></h4>
+      		<div style="text-align:center;font-family:verdana;">
+      			<table class="table table-bordered table-condensed">
+      				<tbody>
+      					<tr>
+      						<td class="col-md-10 title" colspan="4" style="padding-top:0px;background-color:white">ServerMap</td>
+      					<tr>
+      						<td class="col-md-2 title">Search Depth</td>
+      						<td class="col-md-3">
+								<table class="table table-bordered table-condense">
+									<tbody style="background-color:#e9eaed">
+									<tr>
+										<td class="col-md-1" style="padding-top:14px"><img src="images/inbound.png" width="24px" height="24px"> Inbound</td>
+										<td class="col-md-2">
+											<select class="depth form-control" ng-change="changeCallee()" ng-model="callee">
+												<option ng-repeat="dep in depthList" ng-selected="dep == callee" value="{{dep}}">{{dep}}</option>
+											</select>
+										</td>
+									</tr>
+									<tr>
+										<td class="col-md-1" style="padding-top:14px"><img src="images/outbound.png" width="24px" height="24px"> Outbound</td>
+										<td class="col-md-2">
+											<select class="depth form-control" ng-change="changeCaller()" ng-model="caller">
+												<option ng-repeat="dep in depthList" ng-selected="dep == caller" value="{{dep}}">{{dep}}</option>
+											</select>
+										</td>
+									</tr>
+									</tbody>
+								</table>
+      						</td>
+      						<td class="col-md-2 title">Search Peroid</td>
+      						<td class="col-md-3">
+      							<select class="period form-control" ng-change="changePeriod()" ng-model="period">
+      								<option ng-repeat="per in periodTypes" ng-selected="per == period" value="{{per}}">{{per}}</option>
+      							</select>
+      						</td>
+      					</tr>
+      				</tbody>
+      			</table>
+      			<table class="table table-bordered table-condensed">
+      				<tbody>
+      					<tr>
+      						<td class="col-md-10 title" colspan="4" style="padding-top:0px;background-color:white">Application</td>
+      					<tr>
+      					<tr>
+      						<td class="col-md-2 title">Application<br/>Favorite</td>
+      						<td  class="col-md-3">
+      							<select class="applicationList" style="width:100%">
+					                <option ng-repeat="app in applications" value="{{app.text}}">{{app.text}}</option>
+					            </select>
+      						</td>
+      						<td class="col-md-5" colspan="2">
+      							<div class="favorite-list-wrapper">
+	      							<ul class="favorite-list">
+	      								<li ng-repeat="favorite in favoriteList"><img ng-src='/images/icons/{{favorite.split("@")[1]}}.png' height="25px"/> {{favorite.split('@')[0]}} <button class="btn btn-danger btn-xs" style="float:right" ng-click="removeFavorite(favorite)"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button></li>
+	      							</ul>
+	      							<div ng-show="favoriteList.length == 0" style="color:#F00" class="favorite-empty"></div>
+      							</div>
+      						</td>
+      					</tr>
+      				</tbody>
+      			</table>
+      		</div>
+      	</div>
+      	<div id="config-alram" ng-show="isAlarm()" style="margin-top:10px;">
+      		<alarm-user-group-directive></alarm-user-group-directive>
+	      	<div class="tabbable tabs-left" style="padding-left:20px;">
+	          	<ul class="nav nav-tabs">
+	            	<li class="active"><div href="#userListInGroup" data-toggle="tab">Member</div></li>
+	            	<li><div href="#alarmInGroup" data-toggle="tab">Alarm</div></li>
+	          	</ul>
+	          	<div class="tab-content" style="float:left;width:590px;">
+	            	<div class="tab-pane active" id="userListInGroup">
+		            	<alarm-group-member-directive></alarm-group-member-directive>
+	            		<alarm-pinpoint-user-directive></alarm-pinpoint-user-directive>
+		            </div>
+	            	<div class="tab-pane" id="alarmInGroup">
+	            		<alarm-rule-directive></alarm-rule-directive>
+	            	</div>
+	        	</div>
+	        </div>
+	      	<div style="clear:both;display:block;"></div>
+	      </div>
+	    <div id="config-help" ng-show="isHelp()" ng-controller="HelpCtrl">
+      		<div style="font-family:verdana;">
+      			<a href="https://github.com/naver/pinpoint/wiki/FAQ" target="_blank" class="link-title"><i class="xi-clip"></i> FAQ</a>
+      			<a href="https://github.com/naver/pinpoint/issues" class="link-title"><i class="xi-info-circle"></i> Issues</a></h4>
+      			<a href="https://groups.google.com/forum/#!forum/pinpoint_user" class="link-title"><i class="xi-pen"></i> User Group</a>
+      			<hr/>
+      			<h4>English</h4>
+      			<ul>
+      				<li ng-repeat="helpLink in enHelpList">
+      					<a href="{{helpLink.link}}" target="_balnk"><span class="glyphicon glyphicon-file" aria-hidden="true"></span>{{helpLink.title}}</a>
+      				</li>
+      			</ul>
+      			<hr/>
+      			<h4>한글</h4>
+      			<ul>
+      				<li ng-repeat="helpLink in koHelpList">
+      					<a href="{{helpLink.link}}" target="_balnk"><span class="glyphicon glyphicon-file" aria-hidden="true"></span>{{helpLink.title}}</a>
+      				</li>
+      			</ul>
+      		</div>
+      	</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script src="lib/js/base-lib.min.js?v=${buildTime}"></script>
+<script src="lib/js/angular-lib.min.js?v=${buildTime}"></script>
+<script src="lib/js/draw-lib.min.js?v=${buildTime}"></script>
+<script src="lib/js/util-lib.min.js?v=${buildTime}"></script>
+<script src="lib/js/pinpoint-component.min.js?v=${buildTime}"></script>
+
+<script src="scripts/extra/google-analytics.js?v=${buildTime}"></script>
+<script src="scripts/app.js?v=${buildTime}"></script>
+<script src="lib/js/pinpoint.min.js?v=${buildTime}"></script>
+<script>
+	G_BUILD_TIME = "${buildTime}";
+</script>
 </body>
 </html>
