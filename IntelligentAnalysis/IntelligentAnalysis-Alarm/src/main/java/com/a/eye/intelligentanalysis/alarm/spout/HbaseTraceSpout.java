@@ -8,14 +8,16 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.storm.metric.api.AssignableMetric;
+import org.apache.storm.metric.api.CountMetric;
 import org.apache.storm.shade.org.joda.time.DateTime;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Values;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -25,19 +27,25 @@ import java.util.Map;
  */
 public class HbaseTraceSpout extends BaseRichSpout {
     
-    private static final Logger LOG = LoggerFactory.getLogger(HbaseTraceSpout.class);
+    private static final Logger LOG = LogManager.getLogger(HbaseTraceSpout.class);
     
-    private static final int HBASE_STREAM_DATA_START_SEC = 3 * 60;
+    private static final int HBASE_STREAM_DATA_START_SEC = 3 * 60 * 1000;
     
     private static final String TABLE_NAME = "sw-call-chain-new";
     
     public static final byte[] FAMILY_NAME = Bytes.toBytes("call-chain");
     
+    public static final String VERSION = "1.0b.";
+    
     private Table table;
     
-    private byte[] startKey;
+    private byte[] startKey = Bytes.toBytes("1.0b.1461060884538");
     
     private SpoutOutputCollector collector;
+    
+    private transient CountMetric spoutCountMetric;
+    
+    private transient AssignableMetric rowKeyMetric;
       
     @Override
     public void declareOutputFields(final OutputFieldsDeclarer declarer) {
@@ -45,6 +53,10 @@ public class HbaseTraceSpout extends BaseRichSpout {
     
     @Override
     public void open(final Map conf, final TopologyContext context, final SpoutOutputCollector collector) {
+        spoutCountMetric = new CountMetric();
+        context.registerMetric("hbase_read_count", spoutCountMetric, 20);
+        rowKeyMetric = new AssignableMetric(new String(startKey));
+        context.registerMetric("current_row_key", rowKeyMetric, 20);
         try {
             table = ConnectionFactory.createConnection().getTable(TableName.valueOf(TABLE_NAME));
         } catch (IOException e) {
@@ -56,31 +68,36 @@ public class HbaseTraceSpout extends BaseRichSpout {
     
     @Override
     public void nextTuple() {
-        ResultScanner rs = scanTable();
+        ResultScanner rs = scanTable(startKey);
         Result rr = new Result();
         if (null == rs) {
             return;
         }
-        byte[] rowkey = null;
+        byte[] rowKey = null;
         while (rr != null) {
             try {
                 rr = rs.next();
             } catch (IOException e) {
                 LOG.error("Catch exception: ", e);
             }
-            if (rr != null && !rr.isEmpty()) {
-                rowkey = rr.getRow();
-                Values tuple = new Values(rowkey);
-                for (Cell each : rr.rawCells()) {
-                    addTuple(tuple, each.getQualifierArray(), each.getQualifierLength(), each.getQualifierOffset());
-                    addTuple(tuple, each.getValueArray(), each.getValueLength(), each.getValueOffset());
-                }
-                collector.emit(tuple);
+            if (rr == null || rr.isEmpty()) {
+                continue;
             }
+            rowKey = rr.getRow();
+            Values tuple = new Values(rowKey);
+            for (Cell each : rr.rawCells()) {
+                addTuple(tuple, each.getQualifierArray(), each.getQualifierLength(), each.getQualifierOffset());
+                addTuple(tuple, each.getValueArray(), each.getValueLength(), each.getValueOffset());
+            }
+            spoutCountMetric.incr();
+            collector.emit(tuple);
         }
         rs.close();
-        if (rowkey != null)
-            startKey = rowkey;
+        if (rowKey != null){
+            startKey = rowKey;
+            rowKeyMetric.setValue(new String(startKey));
+        }
+            
     }
     
     private void addTuple(final Values tuple, final byte[] data, final int length, final int offset) {
@@ -89,28 +106,20 @@ public class HbaseTraceSpout extends BaseRichSpout {
         tuple.add(result);
     }
     
-    private ResultScanner scanTable() {
+    ResultScanner scanTable(byte[] startKey) {
         
         Scan scan = new Scan();
         scan.addFamily(FAMILY_NAME);
         
         // Initialize startKey when the first scanning table request
         if (null == startKey) {
-            startKey = new byte[5];
-            int startTs = makeTimestamp(HBASE_STREAM_DATA_START_SEC);
-            //TODO start key
-            Bytes.putInt(startKey, 1, startTs);
+            long startTs =  makeTimestamp(HBASE_STREAM_DATA_START_SEC);
+            startKey = Bytes.toBytes(VERSION + startTs);
         }
-        
-        // Initialize stopKey
-        byte[] stopKey = new byte[5];
-        //TODO stop key
-        Bytes.putInt(stopKey, 1, 0);
-        
         // Set the range of scanning table
-        scan.setStartRow(startKey);
+        byte[] startKeyExcludeFirst = Bytes.add(startKey ,Bytes.toBytes("0"));
+        scan.setStartRow(startKeyExcludeFirst);
         scan.setMaxResultSize(100);
-        scan.setStopRow(stopKey);
         
         // get result of this scanning process
         ResultScanner rs = null;
@@ -122,9 +131,8 @@ public class HbaseTraceSpout extends BaseRichSpout {
         return rs;
     }
     
-    private int makeTimestamp(int secInterval) {
+    private long makeTimestamp(int secInterval) {
         long now = new DateTime().getMillis();
-        int nowTs = (int)(now /1000);
-        return (nowTs - secInterval);
+        return (now - secInterval);
     }
 }

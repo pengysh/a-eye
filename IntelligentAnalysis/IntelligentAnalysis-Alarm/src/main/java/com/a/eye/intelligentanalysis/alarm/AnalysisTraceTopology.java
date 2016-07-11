@@ -23,17 +23,18 @@ public class AnalysisTraceTopology {
         builder.setSpout("hbaseTraceSpout", new HbaseTraceSpout());
         Config conf = new Config();
         
-        
         if (args != null && args.length > 0) {
             conf.setDebug(false);
             conf.setNumWorkers(1);
             StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
         } else {
             conf.setDebug(true);
+            conf.setMaxTaskParallelism(2);
+            conf.registerMetricsConsumer(org.apache.storm.metric.LoggingMetricsConsumer.class, 1);
             LocalCluster cluster = new LocalCluster();
             StormTopology topology = builder.createTopology();
             cluster.submitTopology("test", conf, topology);
-            Utils.sleep(40000);
+            Utils.sleep(60000);
             cluster.killTopology("test");
             cluster.shutdown();
         }

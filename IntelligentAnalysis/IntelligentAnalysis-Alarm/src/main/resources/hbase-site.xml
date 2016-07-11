@@ -7,7 +7,7 @@
     </property>
     <property>
         <name>hbase.zookeeper.quorum</name>
-        <value>10.1.235.197</value>
+        <value>host-10-1-235-197,host-10-1-235-198,host-10-1-235-199</value>
         <description>The directory shared by region servers.
         </description>
     </property>
