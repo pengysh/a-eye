@@ -446,7 +446,7 @@
 	                        var chunk = state.text.split("@");
 	                        if (chunk.length > 1) {
 	                            var img = $document.get(0).createElement("img");
-	                            img.src = "/images/icons/" + chunk[1] + ".png";
+	                            img.src = "./images/icons/" + chunk[1] + ".png";
 	                            //img.style.width = "20px";
 	                            img.style.height = "25px";
 	                            img.style.paddingRight = "3px";

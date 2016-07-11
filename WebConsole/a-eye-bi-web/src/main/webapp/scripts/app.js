@@ -79,7 +79,7 @@ pinpointApp.run([ '$rootScope', '$window', '$timeout', '$modal', '$location', '$
             }
             return original.apply($location, [path]);
         };
-		$http.get('/configuration.pinpoint').then(function(result) {
+		$http.get('./configuration.aeye').then(function(result) {
 			if ( result.data.errorCode == 302 ) {
 				$window.location = result.data.redirect;
 				return;
