@@ -11,9 +11,6 @@
 
 	<artifactId>WebConsole</artifactId>
 	
-	<modules>
-		<module>anyModules</module>
-	</modules>
 	<packaging>pom</packaging>
 
 </project>

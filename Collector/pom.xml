@@ -13,11 +13,6 @@
 	
 	<modules>
 		<module>protocol</module>
-		<module>api</module>
-		<module>sdk-plugin</module>
-		<module>agent</module>
-		<module>data-collector-source</module>
-		<module>data-collector-dest</module>
 	</modules>
 	<packaging>pom</packaging>
 
