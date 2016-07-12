@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>com.a.eye</groupId>
-            <artifactId>collector-protocol</artifactId>
+            <artifactId>skywalking-protocol</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.storm</groupId>
