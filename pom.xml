@@ -13,7 +13,7 @@
 	</modules>
 	<packaging>pom</packaging>
 
-	<name>skywalking</name>
+	<name>aeye</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>

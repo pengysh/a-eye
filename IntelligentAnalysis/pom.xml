@@ -25,7 +25,7 @@
 		<dependencies>
 			<dependency>
 				<groupId>com.a.eye</groupId>
-				<artifactId>skywalking-protocol</artifactId>
+				<artifactId>collector-protocol</artifactId>
 				<version>${parent.version}</version>
 			</dependency>
 			<dependency>
