@@ -56,7 +56,7 @@ public class HbaseTraceSpout extends BaseRichSpout {
         try {
             for (short shardingKey = 0; shardingKey < shardingNum; shardingKey++) {
                 if (shardingKey % taskNum == rem) {
-                    String shardingName = Joiner.on("-").join("partition-", shardingKey);
+                    String shardingName = Joiner.on("-").join("partition", shardingKey);
                     AssignableMetric rowKeyMetric = new AssignableMetric("");
                     context.registerMetric(Joiner.on("-").join("rowkey", shardingName), rowKeyMetric, 20);
                     Thread scanThread = new Thread(new HbaseScanner(shardingKey, queue, spoutCountMetric.scope(shardingName), rowKeyMetric));
